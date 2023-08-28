@@ -3,7 +3,16 @@
 #include <stdio.h>
 #include <string.h>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
+    if (argc <= 1) {
+       fprintf(stderr, "This is basic ncurses menu.\n");
+       fprintf(stderr, "- first argument is menu title\n");
+       fprintf(stderr, "- other arguments are menu entries.\n");
+       fprintf(stderr, "- menu entry selected with Enter is printed to stderr\n");
+       return 0;
+    }
+
     // Initialize variables
     int ch, highlight = 0, scroll = 0;
     int n_choices = argc - 2;  // Number of menu choices
