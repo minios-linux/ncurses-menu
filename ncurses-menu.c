@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
         // Get screen dimensions
         getmaxyx(stdscr, max_y, max_x);
         // Calculate maximum menu height and width (80% of screen dimensions)
-        max_width = (int)(max_x * 0.4);
+        max_width = (int)(max_x * 0.8);
         max_height = (int)(max_y * 0.8) - 5;
         if (max_height > argc - 2) max_height = argc - 2;
 
