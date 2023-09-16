@@ -186,10 +186,9 @@ int main(int argc, char *argv[])
         // Handle keypresses
         ch = getch();
 
-        if (ch == ERR && auto_refresh) {  // No key was pressed, but auto-refresh is enabled
+        if (auto_refresh) {  // No key was pressed, but auto-refresh is enabled
             read_options_from_file();
-            clear();
-            continue;  // Skip the rest of the loop and start over
+            refresh();
         }
 
         switch (ch) {
