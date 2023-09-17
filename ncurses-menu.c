@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     read_options_from_file();
 
-    if (n_choices == 0) {
+    if (n_choices == 0 && title == NULL) {
         fprintf(stderr, "This is a basic ncurses menu.\n");
         fprintf(stderr, "- Use -t for menu title\n");
         fprintf(stderr, "- Use -o for menu entries.\n");
