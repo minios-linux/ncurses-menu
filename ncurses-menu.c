@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
         refresh();
 
         if (auto_refresh) {
-            timeout(1000);  // Wait up to 1 second for input
+            timeout(400);  // Wait up to 400ms for input
         } else {
             timeout(-1);  // Wait indefinitely for input
         }
