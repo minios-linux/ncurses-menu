@@ -12,6 +12,14 @@ int highlight = 0;
 int scrollpos = 0;
 int n_o_choices = 0;
 
+void replace_tab_with_space(char *str) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] == '\t') {
+            str[i] = ' ';
+        }
+    }
+}
+
 void read_options_from_file() {
     // Store the text of the currently highlighted option
     char *previously_highlighted = NULL;
@@ -26,6 +34,7 @@ void read_options_from_file() {
         char line[256];
         while (fgets(line, sizeof(line), file)) {
             line[strcspn(line, "\n")] = 0;  // Remove newline
+            replace_tab_with_space(line);  // Replace tabs with a space
             file_options = realloc(file_options, (file_n_choices + 1) * sizeof(char *));
             file_options[file_n_choices++] = strdup(line);
         }
@@ -65,8 +74,6 @@ void read_options_from_file() {
     }
 }
 
-
-
 int main(int argc, char *argv[])
 {
     for (int i = 1; i < argc; i++) {
@@ -74,8 +81,10 @@ int main(int argc, char *argv[])
             title = strdup(argv[++i]);
         } else if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
             options = realloc(options, (n_choices + 1) * sizeof(char *));
-            options[n_choices++] = strdup(argv[++i]);
+            options[n_choices] = strdup(argv[++i]);
+            replace_tab_with_space(options[n_choices]);
             n_o_choices++;
+            n_choices++;
         } else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
             filename = argv[++i];
         } else if (strcmp(argv[i], "-s") == 0) {
