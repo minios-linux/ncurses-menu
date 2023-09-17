@@ -134,6 +134,7 @@ int main(int argc, char *argv[])
 
         // Display title with left and right margins
         attron(A_BOLD);
+        mvhline(start_y - 2, start_x, ' ', max_width);
         mvprintw(start_y - 2, start_x, " %.*s ", max_width - 2, title);
         attroff(A_BOLD);
 
@@ -202,7 +203,7 @@ int main(int argc, char *argv[])
 
         switch (ch) {
             case KEY_UP: if (--highlight < 0) highlight = 0; break;
-            case KEY_DOWN: if (++highlight == n_choices) highlight = n_choices - 1; break;
+            case KEY_DOWN: if (n_choices > 0 && ++highlight == n_choices) highlight = n_choices - 1; break;
             case 10:  // Enter key
                 fprintf(stderr, "%s\n", options[highlight]);
                 endwin();
