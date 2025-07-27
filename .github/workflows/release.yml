@@ -1,0 +1,39 @@
+name: Create Release and Build Binary
+
+on:
+    push:
+        tags:
+            - 'v*.*.*'
+    workflow_dispatch:
+
+jobs:
+    build-and-release:
+        # This job runs on the standard 64-bit Ubuntu runner
+        runs-on: ubuntu-latest
+
+        steps:
+          # This step runs on Ubuntu and successfully checks out the code
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          # For building, we manually launch a 32-bit Alpine container
+          - name: Build the packed static 32-bit binary
+            run: |
+              docker run --rm -v "${{ github.workspace }}":/src i386/alpine:latest sh -c '
+                set -e
+                apk add --no-cache build-base ncurses-dev ncurses-static upx
+                cd /src
+                make static-packed
+              '
+          # Rename the binary after building
+          - name: Rename binary to ncurses-menu
+            run: mv ncurses-menu-packed ncurses-menu
+          
+          # This step runs on Ubuntu again and finds the binary
+          # created in the container, since the working directory was shared.
+          - name: Create Release and Upload Asset
+            uses: softprops/action-gh-release@v2
+            with:
+              files: ncurses-menu
+              name: "Release ${{ github.ref_name }} (x86)"
+              generate_release_notes: true
