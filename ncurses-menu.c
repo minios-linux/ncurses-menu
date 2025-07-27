@@ -12,6 +12,23 @@ int highlight = 0;
 int scrollpos = 0;
 int n_o_choices = 0;
 
+// Processes backslash escapes like \n in a string
+void process_escapes(char *str) {
+    if (!str) return;
+    char *p_read = str;
+    char *p_write = str;
+    while (*p_read) {
+        if (*p_read == '\\' && *(p_read + 1) == 'n') {
+            *p_write++ = '\n';
+            p_read += 2;
+        } else {
+            *p_write++ = *p_read++;
+        }
+    }
+    *p_write = '\0';
+}
+
+// Replaces all tab characters in a string with spaces
 void replace_tab_with_space(char *str) {
     for (int i = 0; str[i] != '\0'; i++) {
         if (str[i] == '\t') {
@@ -20,6 +37,7 @@ void replace_tab_with_space(char *str) {
     }
 }
 
+// Reads menu options from a file and updates the list
 void read_options_from_file() {
     // Store the text of the currently highlighted option
     char *previously_highlighted = NULL;
@@ -79,6 +97,7 @@ int main(int argc, char *argv[])
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) {
             title = strdup(argv[++i]);
+            process_escapes(title);
         } else if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
             options = realloc(options, (n_choices + 1) * sizeof(char *));
             options[n_choices] = strdup(argv[++i]);
@@ -94,12 +113,23 @@ int main(int argc, char *argv[])
 
     read_options_from_file();
 
+    // Show help if requested
+    for (int i = 1; i < argc; i++) {
+        if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0)) {
+            fprintf(stderr, "%s - interactive terminal menu\n", argv[0]);
+            fprintf(stderr, "Usage: %s [OPTIONS]\n", argv[0]);
+            fprintf(stderr, "Options:\n");
+            fprintf(stderr, "  -t <title>      Set menu title (supports \\n for newlines)\n");
+            fprintf(stderr, "  -o <option>     Add menu entry (can be used multiple times)\n");
+            fprintf(stderr, "  -f <file>       Read menu entries from file (one per line)\n");
+            fprintf(stderr, "  -s              Auto-refresh entries from file every 400ms\n");
+            fprintf(stderr, "  -h, --help      Show this help message and exit\n");
+            return 0;
+        }
+    }
+    // Show brief help if no options are provided
     if (n_choices == 0 && title == NULL) {
-        fprintf(stderr, "This is a basic ncurses menu.\n");
-        fprintf(stderr, "- Use -t for menu title\n");
-        fprintf(stderr, "- Use -o for menu entries.\n");
-        fprintf(stderr, "- Use -f to read menu entries from a file.\n");
-        fprintf(stderr, "- Use -s to auto-refresh entries from file every second.\n");
+        fprintf(stderr, "Usage: %s [-t <title>] [-o <option>]... [-f <file>] [-s] [-h]\n", argv[0]);
         return 0;
     }
 
@@ -113,47 +143,71 @@ int main(int argc, char *argv[])
     start_color();
 
     // Initialize variables
-    int ch = 0; 
+    int ch = 0;
     int max_y, max_x, max_height, max_width;  // Screen dimensions
 
     while (1) {
         // Get screen dimensions
         getmaxyx(stdscr, max_y, max_x);
 
+        int title_lines = 0;
+        if (title) {
+            title_lines = 1;
+            char *p = title;
+            while ((p = strchr(p, '\n')) != NULL) {
+                title_lines++;
+                p++;
+            }
+        }
+
         // Calculate maximum menu height and width (80% of screen dimensions)
         max_width = (int)(max_x * 0.8);
-        max_height = (int)(max_y * 0.8) - 5;
+        int title_box_height = title ? (2 + title_lines) : 0;
+        max_height = (int)(max_y * 0.8) - title_box_height - 2;
         if (max_height > n_choices) max_height = n_choices;
 
         // Ensure at least 1 row for the menu
         if (max_height < 1) max_height = 1;
 
         // Calculate starting positions for menu and title
-        int start_y = (max_y - max_height - 5) / 2 + 3;
+        int total_height = title_box_height + max_height + 1;
+        int start_y = (max_y - total_height) / 2;
         int start_x = (max_x - max_width) / 2;
+        int menu_start_y = start_y + title_box_height;
 
-        // Display title with left and right margins
-        attron(A_BOLD);
-        mvhline(start_y - 2, start_x, ' ', max_width);
-        mvprintw(start_y - 2, start_x, " %.*s ", max_width - 2, title);
-        attroff(A_BOLD);
-
-        // Draw borders around title and menu
-        mvaddch(start_y - 3, start_x - 1, '+');
-        mvaddch(start_y - 3, start_x + max_width, '+');
-        mvhline(start_y - 3, start_x, '-', max_width);
-        mvvline(start_y - 2, start_x - 1, '|', 1);
-        mvvline(start_y - 2, start_x + max_width, '|', 1);
+        // Display title and borders
+        if (title) {
+            attron(A_BOLD);
+            char *title_copy = strdup(title);
+            if (title_copy) {
+                char *line = strtok(title_copy, "\n");
+                int i = 0;
+                while (line) {
+                    mvprintw(start_y + 1 + i, start_x, " %.*s ", max_width - 2, line);
+                    line = strtok(NULL, "\n");
+                    i++;
+                }
+                free(title_copy);
+            }
+            attroff(A_BOLD);
+            
+            // Draw borders around title
+            mvaddch(start_y, start_x - 1, '+');
+            mvaddch(start_y, start_x + max_width, '+');
+            mvhline(start_y, start_x, '-', max_width);
+            mvvline(start_y + 1, start_x - 1, '|', title_lines);
+            mvvline(start_y + 1, start_x + max_width, '|', title_lines);
+        }
 
         // Draw menu box
-        mvaddch(start_y - 1, start_x - 1, '+');
-        mvaddch(start_y + max_height, start_x - 1, '+');
-        mvaddch(start_y - 1, start_x + max_width, '+');
-        mvaddch(start_y + max_height, start_x + max_width, '+');
-        mvhline(start_y - 1, start_x, '-', max_width);
-        mvhline(start_y + max_height, start_x, '-', max_width);
-        mvvline(start_y, start_x - 1, '|', max_height);
-        mvvline(start_y, start_x + max_width, '|', max_height);
+        mvaddch(menu_start_y - 1, start_x - 1, '+');
+        mvaddch(menu_start_y + max_height, start_x - 1, '+');
+        mvaddch(menu_start_y - 1, start_x + max_width, '+');
+        mvaddch(menu_start_y + max_height, start_x + max_width, '+');
+        mvhline(menu_start_y - 1, start_x, '-', max_width);
+        mvhline(menu_start_y + max_height, start_x, '-', max_width);
+        mvvline(menu_start_y, start_x - 1, '|', max_height);
+        mvvline(menu_start_y, start_x + max_width, '|', max_height);
 
         // Update scroll position based on highlighted item
         if (highlight < scrollpos) scrollpos = highlight;
@@ -161,13 +215,13 @@ int main(int argc, char *argv[])
 
         // Show "more" indicator if menu can be scrolled up or down
         attron(A_BOLD);
-        if (scrollpos > 0) mvprintw(start_y - 1, start_x + max_width - 4, "more");
-        if (scrollpos + max_height < n_choices) mvprintw(start_y + max_height, start_x + max_width - 4, "more");
+        if (scrollpos > 0) mvprintw(menu_start_y - 1, start_x + max_width - 4, "more");
+        if (scrollpos + max_height < n_choices) mvprintw(menu_start_y + max_height, start_x + max_width - 4, "more");
         attroff(A_BOLD);
 
         // Display menu items
         for (int i = 0; i < max_height && i + scrollpos < n_choices; ++i) {
-            int y = start_y + i;
+            int y = menu_start_y + i;
             int x = start_x;
             char *text = options[i + scrollpos];
 
@@ -205,7 +259,9 @@ int main(int argc, char *argv[])
             case KEY_UP: if (--highlight < 0) highlight = 0; break;
             case KEY_DOWN: if (n_choices > 0 && ++highlight == n_choices) highlight = n_choices - 1; break;
             case 10:  // Enter key
-                fprintf(stderr, "%s\n", options[highlight]);
+                if (highlight < n_choices) {
+                    fprintf(stderr, "%s\n", options[highlight]);
+                }
                 endwin();
                 return 0;
             case 27: case 'Q': case 'q':  // Esc or Q/q to quit
