@@ -183,7 +183,16 @@ int main(int argc, char *argv[])
                 char *line = strtok(title_copy, "\n");
                 int i = 0;
                 while (line) {
-                    mvprintw(start_y + 1 + i, start_x, " %.*s ", max_width - 2, line);
+                    // Center the title line
+                    int line_len = strlen(line);
+                    // Calculate centered x position
+                    int centered_x = start_x + (max_width - line_len) / 2;
+                    // Ensure centered_x does not go out of bounds
+                    if (centered_x < start_x) {
+                        centered_x = start_x;
+                    }
+                    // Print the centered line, truncating it if it doesn't fit in max_width
+                    mvprintw(start_y + 1 + i, centered_x, "%.*s", max_width, line);
                     line = strtok(NULL, "\n");
                     i++;
                 }
