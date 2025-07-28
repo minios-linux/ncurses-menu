@@ -8,7 +8,6 @@ A simple ncurses-based menu for the terminal
 - Load options from a file (`-f <file>`, one option per line)
 - Auto-refresh options from file every 400 ms (`-s`)
 - Keyboard controls: arrows, PgUp/PgDn, Enter (select), Esc/q/Q (exit)
-- Color scheme and scrolling support
 
 ## Build
 
